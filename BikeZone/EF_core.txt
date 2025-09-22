@@ -1,0 +1,95 @@
+EF core -> ORM for .net
+2 Approaches:
+    1. DB First:
+        - Existing DB
+    2. Code First:
+        - Create Model first and then create DB from it
+
+Approach 1 - DB First:
+Packages:
+    - Microsoft.EFcore.SqlServer
+    - Microsoft.EFcore.Tools
+
+Steps:
+    -dotnet new mvc -n <ProjectName>
+    -cd <ProjectName>
+    -dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+    -dotnet add package Microsoft.EntityFrameworkCore.Tools
+    -dotnet new tool-manifest
+    -dotnet tool install dotnet-ef
+    -dotnet tool run dotnet-ef dbcontext scaffold "server=localhost;user=***;password=*****;database=****;trustservercertificate=true;" Microsoft.EntityFrameworkCore.SqlServer -o Models -t <TableName> -t<TableName>
+    -Add Connection string in appsettings.json
+    "ConnectionStrings": {
+        "varName: "server=localhost;user=***;password=*****;database=****;trustservercertificate=true;"
+    }  
+    "server=localhost;user=sa;password=Firefly@098;database=art;trustservercertificate=true;"
+    "ConnectionStrings": {
+    "bikeDB": "server=localhost;user=sa;password=Firefly@098;database=bikeStoreMS;trustservercertificate=true;"
+  }
+    -In Program.cs, add the DBContext service
+        builder.Services.AddDbContext<<DbContextClass>>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("<varName>")));
+    -In ___Context.cs file, update the OnConfiguring method
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+            => optionsBuilder.UseSqlServer("varName");
+    -To Create Controller using Scaffolding    
+    -dotnet tool install dotnet-aspnet-codegenerator
+    -dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+    -dotnet tool run dotnet-aspnet-codegenerator controller -name <ControllerName> -m <ModelClass> -dc <DbContextClass> --relativeFolderPath Controllers --useDefaultLayout --referenceScriptLibraries
+
+
+Code First Approach:
+Steps:
+    - Create a new MVC project
+        dotnet new mvc -n <ProjectName>
+        cd <ProjectName>
+    - install the Packages
+        - Microsoft.EFcore.SqlServer
+        - Microsoft.EFcore.Tools
+            dotnet add package Microsoft.EntityFrameworkCore.SqlServer
+            dotnet add package Microsoft.EntityFrameworkCore.Tools
+            dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+            Create a tool manifest file
+                dotnet new tool-manifest
+                dotnet tool install dotnet-ef
+                dotnet tool install dotnet-aspnet-codegenerator
+    - Create Models
+    - Create DBContext class
+        - Inherit from DbContext
+        - Create a constructor which takes DbContextOptions and passes it to base class constructor
+        - Create DbSet properties for models u want to create CRUD operations for.
+        - OnModelCreating class for data seeding
+    - In appsettings.json, add the connection string
+    - In Program.cs, add the DBContext service
+        builder.Services.AddDbContext<<DbContextClass>>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("<varName>")));
+    - Migrations
+        To Add Migration:
+            - dotnet tool run dotnet-ef migrations add <MigrationName>
+        To Remove last Migration:
+            - dotnet tool run dotnet-ef migrations remove
+    - Update DB:
+            - dotnet tool run dotnet-ef database update
+    - Controller creation:
+        Create controller file <ControllerName>Controller.cs in Controllers folder
+        - Inject the DBContext class using constructor injection
+        - Create action methods for CRUD operations:
+            - Index - To display all records
+                public IActionResult Index()
+                {
+                    IEnumerable<Model> <Name> = _context.<DbsetName>.ToList();
+                    return View(<Name>);
+                }
+    - View Creation:
+        dotnet aspnet-codegenerator view <ViewName> <Template> -m <Model> -dc <DataContext> -outDir <OutputFolder>
+        -Eg:     dotnet aspnet-codegenerator view AuthorDisplay List -m Author -dc BookAuthorContext -outDir Views/Author
+        - This will create AuthorDisplay.cshtml file in Views/Author folder
+            
+
+
+Pass data from Controller to View:
+    - Using ViewBag : Dynamic
+    - Using ViewData : Dictionary, typecasting needed
+    Drawback:
+        - Doesn't support throw runtime checking
+
+-dotnet aspnet-codegenerator view <ViewName> <Template> -m <Model> -dc <DataContext> -outDir <OutputFolder>
+    dotnet aspnet-codegenerator view Edit Edit -m Author -dc BookAuthorContext -outDir Views/Authors
